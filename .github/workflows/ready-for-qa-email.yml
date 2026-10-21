@@ -2,15 +2,12 @@ name: Ready For QA email
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # 01:30 UTC = 08:30 Vietnam time (UTC+7)
+    - cron: "30 1 * * *"
   workflow_dispatch:
 
-concurrency:
-  group: ready-for-qa-email
-  cancel-in-progress: false
-
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   notify:
@@ -19,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Email new Ready For QA tickets
+      - name: Email tickets in Ready For QA
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
@@ -30,12 +27,3 @@ jobs:
           TARGET_STATUS: ${{ vars.TARGET_STATUS }}
           JQL_FILTER: ${{ vars.JQL_FILTER }}
         run: python3 notify.py
-
-      - name: Remember which tickets were already emailed
-        if: always()
-        run: |
-          [ -f state/sent.json ] || exit 0
-          git config user.name "github-actions[bot]"
-          git config user.email "41898233+github-actions[bot]@users.noreply.github.com"
-          git add state/sent.json
-          git diff --cached --quiet || { git commit -m "Update sent list" && git push; }
